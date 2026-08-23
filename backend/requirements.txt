@@ -1,3 +1,8 @@
+# CPU-only torch build — the default PyPI wheel bundles ~2.7GB of unused
+# CUDA/cuDNN libraries (no GPU on serverless); this keeps the deploy small.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.13.0+cpu
+
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 python-multipart==0.0.20

@@ -24,6 +24,14 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = ""
     supabase_management_token: str = ""
 
+    # Comma-separated list of allowed frontend origins for CORS. Defaults to the
+    # local Vite dev server; set to the deployed frontend's URL in production.
+    cors_origins: str = "http://localhost:5173"
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+
 
 @lru_cache
 def get_settings() -> Settings:

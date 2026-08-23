@@ -17,8 +17,8 @@ dist/
 build/
 .vite/
 
-# data (generated, can be large)
-data/ml_questions.md
+# data — ml_questions.md is committed (small, deterministic, needed in
+# production so phase 4 doesn't silently fall back to Claude-generated-only)
 *.faiss
 *.index
 
