@@ -32,16 +32,18 @@ export default function VoiceRecorder({ onRecorded, disabled }) {
   }
 
   return (
-    <div className="voice-recorder">
+    <div>
       <button
         type="button"
         disabled={disabled}
         onClick={recording ? stopRecording : startRecording}
-        className={recording ? "recording" : ""}
+        className={`rounded-md px-4 py-2 font-medium disabled:opacity-50 ${
+          recording ? "bg-red-500 text-white" : "bg-[var(--social-bg)] text-[var(--text-h)]"
+        }`}
       >
         {recording ? "Stop & send" : "🎙 Answer by voice"}
       </button>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="text-red-500">{error}</p>}
     </div>
   );
 }

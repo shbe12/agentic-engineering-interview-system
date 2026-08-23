@@ -32,10 +32,10 @@ Every PRD produced by this skill follows this exact structure:
 - <deferred item>
 
 ## Tech Stack
-- Frontend: ...
-- Backend: ...
-- Database: ...
-- (other rows as relevant: Auth, Voice, ML/embeddings, Deployment, etc.)
+| Component | Technology |
+|---|---|
+| <Component> | <Technology> |
+| ... | (rows as relevant: LLM, Frontend, Backend, Database, Auth, Voice/STT/TTS, Embedding Model, Deployment, Secrets, etc.) |
 
 ## Architecture
 <short prose description of how the pieces talk to each other, or an ASCII/mermaid diagram if it adds clarity — not just a placeholder>
@@ -50,7 +50,12 @@ Every PRD produced by this skill follows this exact structure:
 1. **Determine the sprint number.** New project → `v1`. Existing project with a prior `docs/PRD.md` → read it, bump to the next version, and treat new work as that version's scope (previous versions' Core Features become historical context, not restated).
 2. **Gather inputs.** From the user's request (and any spec/notes they've referenced), identify: project name, one-line purpose, target users, the features that belong in *this* version specifically, anything explicitly deferred, the tech stack, and how the major pieces fit together. If any of these is genuinely unclear (not just terse), ask — do not silently invent product scope, especially Core Features and Out of Scope.
 3. **Draft the PRD** into `docs/PRD.md` (create `docs/` if missing; if revising, overwrite with the new version but keep it as a single current document, not an accumulating history file). Keep Core Features numbered and scoped tightly to the current version.
-4. **Draft a matching task list** into `docs/TASKS.md` — one checklist item per unit of work needed to deliver the Core Features, roughly in build order (foundations/scaffolding first, integration/end-to-end pass last). Keep it short enough to track at a glance (roughly 8-10 items) — split further only if the user asks for more granularity. This file is what `/dev` executes against.
+4. **Draft a matching task list** into `docs/TASKS.md` — one checklist item per unit of work needed to deliver the Core Features, roughly in build order (foundations/scaffolding first, integration/end-to-end pass last). Keep it short enough to track at a glance (roughly 8-10 items) — split further only if the user asks for more granularity. **Every task carries a `Test:` line** naming how `/dev` will verify it's actually done (a `pytest` test, a route hit via `/docs`, a scripted manual check, a verification query — whatever fits that task), e.g.:
+   ```markdown
+   - [ ] 3. Resume ingestion — POST /resume/upload, OpenAI parsing, stored in `candidates`.
+         Test: `backend/tests/test_resume.py` — upload a sample PDF, assert 200 + a row lands in `candidates`.
+   ```
+   This file is what `/dev` executes against, and `/dev` won't check a task off without its test passing — so don't leave the `Test:` line vague or skip it.
 5. **Get approval before building.** Present the PRD (or use plan mode if already mid-task) and confirm the user is happy with the scope before writing application code. Do not start implementation in the same turn the PRD is drafted unless the user has already approved it.
 6. **Hand off to `/dev`.** Once approved, implementation proceeds via the `/dev` skill, which executes `docs/TASKS.md` and keeps `docs/PRD.md` as the scope source of truth (if scope changes mid-build, update the PRD first).
 

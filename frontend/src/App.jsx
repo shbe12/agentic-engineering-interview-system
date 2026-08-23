@@ -1,5 +1,4 @@
 import { useState } from "react";
-import "./App.css";
 import ChatWindow from "./components/ChatWindow";
 import ReportView from "./components/ReportView";
 import ResumeUpload from "./components/ResumeUpload";
@@ -38,21 +37,27 @@ export default function App() {
   }
 
   return (
-    <div className="app">
-      <h1>AI Mock Interview Agent</h1>
+    <div className="mx-auto max-w-2xl px-5 py-8 text-left">
+      <h1 className="mb-6 text-2xl font-semibold text-[var(--text-h)]">AI Mock Interview Agent</h1>
 
       {step === STEPS.UPLOAD && <ResumeUpload onUploaded={handleUploaded} />}
 
       {step === STEPS.READY && candidate && (
-        <div className="ready-panel">
-          <h2>Hi {candidate.resume_sections.name || "there"} 👋</h2>
+        <div className="flex flex-col items-start gap-3">
+          <h2 className="text-lg font-medium text-[var(--text-h)]">
+            Hi {candidate.resume_sections.name || "there"} 👋
+          </h2>
           <p>
             Field detected: <strong>{candidate.field}</strong>
           </p>
-          <button onClick={handleStart} disabled={starting}>
+          <button
+            onClick={handleStart}
+            disabled={starting}
+            className="rounded-md bg-[var(--accent)] px-4 py-2 font-medium text-white disabled:opacity-50"
+          >
             {starting ? "Starting…" : "Begin interview"}
           </button>
-          {error && <p className="error">{error}</p>}
+          {error && <p className="text-red-500">{error}</p>}
         </div>
       )}
 

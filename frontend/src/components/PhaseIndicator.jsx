@@ -8,11 +8,20 @@ const PHASE_LABELS = {
 
 export default function PhaseIndicator({ phase }) {
   return (
-    <div className="phase-indicator">
+    <div className="mb-3 flex flex-wrap gap-1">
       {[1, 2, 3, 4, 5].map((p) => (
-        <div key={p} className={`phase-step ${p === phase ? "active" : p < phase ? "done" : ""}`}>
-          <span className="phase-number">{p}</span>
-          <span className="phase-label">{PHASE_LABELS[p]}</span>
+        <div
+          key={p}
+          className={`flex-1 rounded-md px-1 py-1.5 text-center text-xs bg-[var(--accent-bg)] ${
+            p === phase
+              ? "opacity-100 outline outline-2 outline-[var(--accent)]"
+              : p < phase
+                ? "opacity-85"
+                : "opacity-50"
+          }`}
+        >
+          <span className="block font-bold">{p}</span>
+          <span>{PHASE_LABELS[p]}</span>
         </div>
       ))}
     </div>

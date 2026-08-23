@@ -22,17 +22,22 @@ export default function ResumeUpload({ onUploaded }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="resume-upload">
-      <h2>Upload your resume</h2>
+    <form onSubmit={handleSubmit} className="flex flex-col items-start gap-3">
+      <h2 className="text-lg font-medium text-[var(--text-h)]">Upload your resume</h2>
       <input
         type="file"
         accept="application/pdf"
         onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+        className="text-sm"
       />
-      <button type="submit" disabled={!file || loading}>
+      <button
+        type="submit"
+        disabled={!file || loading}
+        className="rounded-md bg-[var(--accent)] px-4 py-2 font-medium text-white disabled:opacity-50"
+      >
         {loading ? "Parsing resume…" : "Start"}
       </button>
-      {error && <p className="error">{error}</p>}
+      {error && <p className="text-red-500">{error}</p>}
     </form>
   );
 }

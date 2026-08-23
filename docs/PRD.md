@@ -25,13 +25,18 @@ A full AI-powered mock interview agent that takes a candidate's resume PDF, runs
 - Video-based emotion detection (voice-only for v1).
 
 ## Tech Stack
-- Frontend: React (Vite).
-- Backend: FastAPI (Python).
-- Database: Supabase (Postgres), provisioned programmatically via the Management API.
-- LLM: OpenAI Responses API, model configurable via `OPENAI_CHAT_MODEL` (default `gpt-5.4`, `reasoning.effort=low`).
-- Voice: OpenAI Whisper (speech-to-text) + ElevenLabs (text-to-speech, cloned voice).
-- Retrieval: `sentence-transformers/all-MiniLM-L6-v2` (384-dim) run locally for the ML questions bank.
-- Secrets: `.env` (git-ignored), sourced from `secrets.md` (also git-ignored).
+| Component | Technology |
+|---|---|
+| LLM | OpenAI, model configurable via `OPENAI_CHAT_MODEL` (default `gpt-5.4`, reasoning effort low) — flexible, may change |
+| Resume Parsing | OpenAI native file input (not pymupdf/pdfplumber) — flexible, may change |
+| Speech-to-Text | OpenAI Whisper |
+| Text-to-Speech | ElevenLabs (voice ID `tAtHhBlA3E0eKZJKNSKE`) |
+| Database | Supabase (PostgreSQL), provisioned programmatically via the Management API |
+| Embedding Model | 384-dimensional model (`sentence-transformers/all-MiniLM-L6-v2`), run locally |
+| Backend | Python + FastAPI |
+| Frontend | React (Vite) + Tailwind CSS |
+| ML Questions Bank | GitHub: andrewekhalel/MLQuestions + self-generated fallback |
+| Secrets | `.env` (git-ignored), sourced from `secrets.md` (also git-ignored) |
 
 ## Architecture
 Browser (React) talks to the FastAPI backend over REST: resume upload, chat turns, and voice turns. The backend calls out to OpenAI (parsing, chat, Whisper STT) and ElevenLabs (TTS), and reads/writes session and evaluation state in Supabase. The ML question retriever runs in-process in the backend against a locally embedded copy of the MLQuestions repo — no external vector DB needed at this scale.

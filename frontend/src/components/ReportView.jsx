@@ -36,19 +36,23 @@ export default function ReportView({ sessionId }) {
     };
   }, [sessionId]);
 
-  if (error) return <p className="error">Could not load report: {error}</p>;
+  if (error) return <p className="text-red-500">Could not load report: {error}</p>;
   if (!report) return <p>Generating your final report…</p>;
 
   return (
-    <div className="report-view">
-      <h2>Final report</h2>
-      <p className="summary">{report.summary}</p>
-      <table className="scores">
+    <div>
+      <h2 className="mb-2 text-lg font-medium text-[var(--text-h)]">Final report</h2>
+      <p className="leading-relaxed">{report.summary}</p>
+      <table className="mt-4 w-full border-collapse">
         <tbody>
           {Object.entries(report.per_phase_scores).map(([phase, score]) => (
             <tr key={phase}>
-              <td>{PHASE_LABELS[phase] ?? `Phase ${phase}`}</td>
-              <td>{score === null || score === undefined ? "—" : `${score}/100`}</td>
+              <td className="border-b border-[var(--border)] py-2">
+                {PHASE_LABELS[phase] ?? `Phase ${phase}`}
+              </td>
+              <td className="border-b border-[var(--border)] py-2">
+                {score === null || score === undefined ? "—" : `${score}/100`}
+              </td>
             </tr>
           ))}
         </tbody>
