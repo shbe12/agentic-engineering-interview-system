@@ -28,32 +28,35 @@ def test_detect_anxiety_flags_disfluent_speech():
     assert "stuttering" in result["reason"]
 
 
-def test_transcribe_calls_whisper_and_parses_result(tmp_path):
+def test_transcribe_calls_scribe_and_parses_result(tmp_path):
     audio_file = tmp_path / "answer.webm"
     audio_file.write_bytes(b"fake audio bytes")
 
     fake_result = SimpleNamespace(
         text="hello there",
-        duration=4.0,
-        words=[{"word": "hello"}, {"word": "there"}],
+        audio_duration_secs=4.0,
+        words=[
+            SimpleNamespace(text="hello", type="word"),
+            SimpleNamespace(text=" ", type="spacing"),
+            SimpleNamespace(text="there", type="word"),
+        ],
     )
     fake_client = MagicMock()
-    fake_client.audio.transcriptions.create.return_value = fake_result
+    fake_client.speech_to_text.convert.return_value = fake_result
 
-    with patch("app.voice.stt.get_openai_client", return_value=fake_client):
+    with patch("app.voice.stt.get_elevenlabs_client", return_value=fake_client):
         result = transcribe(str(audio_file))
 
     assert result == {"text": "hello there", "duration_seconds": 4.0, "word_count": 2}
-    _, kwargs = fake_client.audio.transcriptions.create.call_args
-    assert kwargs["model"] == "whisper-1"
-    assert kwargs["response_format"] == "verbose_json"
+    _, kwargs = fake_client.speech_to_text.convert.call_args
+    assert kwargs["model_id"] == "scribe_v2"
 
 
 def test_synthesize_calls_elevenlabs_with_configured_voice():
     fake_client = MagicMock()
     fake_client.text_to_speech.convert.return_value = [b"chunk1", b"chunk2"]
 
-    with patch("app.voice.tts._client", return_value=fake_client):
+    with patch("app.voice.tts.get_elevenlabs_client", return_value=fake_client):
         audio = synthesize("Hello, candidate.")
 
     assert audio == b"chunk1chunk2"

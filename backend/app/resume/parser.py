@@ -1,12 +1,13 @@
-"""Resume PDF parsing — deliberately uses OpenAI's native file input instead of a
+"""Resume PDF parsing — deliberately uses Claude's native document input instead of a
 Python PDF library (pymupdf etc.), per the spec: "Maybe don't use a Python library
 like pymupdf, etc. That's not very reliable."
 """
 
+import base64
 import json
 
 from app.config import get_settings
-from app.llm import get_openai_client
+from app.llm import MAX_TOKENS, get_anthropic_client
 
 RESUME_SCHEMA = {
     "type": "object",
@@ -51,30 +52,34 @@ Return ONLY the structured fields — do not invent experience that isn't in the
 
 def parse_resume_pdf(file_path: str) -> dict:
     settings = get_settings()
-    client = get_openai_client()
+    client = get_anthropic_client()
 
     with open(file_path, "rb") as f:
-        uploaded = client.files.create(file=f, purpose="user_data")
+        pdf_b64 = base64.standard_b64encode(f.read()).decode("utf-8")
 
-    response = client.responses.create(
-        model=settings.openai_chat_model,
-        reasoning={"effort": settings.openai_reasoning_effort},
-        input=[
+    response = client.messages.create(
+        model=settings.anthropic_model,
+        max_tokens=MAX_TOKENS,
+        output_config={
+            "effort": settings.anthropic_effort,
+            "format": {"type": "json_schema", "schema": RESUME_SCHEMA},
+        },
+        messages=[
             {
                 "role": "user",
                 "content": [
-                    {"type": "input_file", "file_id": uploaded.id},
-                    {"type": "input_text", "text": PARSE_INSTRUCTIONS},
+                    {
+                        "type": "document",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "application/pdf",
+                            "data": pdf_b64,
+                        },
+                    },
+                    {"type": "text", "text": PARSE_INSTRUCTIONS},
                 ],
             }
         ],
-        text={
-            "format": {
-                "type": "json_schema",
-                "name": "resume_extraction",
-                "schema": RESUME_SCHEMA,
-                "strict": True,
-            }
-        },
     )
-    return json.loads(response.output_text)
+    text = next(block.text for block in response.content if block.type == "text")
+    return json.loads(text)

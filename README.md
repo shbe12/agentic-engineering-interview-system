@@ -4,10 +4,10 @@ Full-stack AI mock interview agent: resume-aware, five-phase adaptive interview 
 
 ## Prerequisites
 
-- Python 3.11+ with `pip`/`venv` available (`sudo apt-get install -y python3-pip python3.14-venv` on this box — not yet installed).
+- Python 3.11+ with `pip`/`venv` available (installed via `sudo apt-get install -y python3-pip python3.14-venv`).
 - Node.js 22+ (this repo pins `nvm alias default 22`).
-- An OpenAI API key with access to the configured chat model + Whisper (fill into `backend/.env`, see `backend/.env.example` — **currently blank**, nothing that calls GPT or Whisper will work until this is set).
-- ElevenLabs and Supabase are already provisioned (see `backend/.env`).
+- An Anthropic API key (fill into `backend/.env`, see `backend/.env.example` — **currently blank**, nothing that calls Claude will work until this is set). Note: a Claude Pro (claude.ai) subscription does **not** grant this — get a key with its own billing from `console.anthropic.com/settings/keys`.
+- ElevenLabs (used for both speech-to-text via Scribe and text-to-speech) and Supabase are already provisioned (see `backend/.env`).
 
 ## Backend
 

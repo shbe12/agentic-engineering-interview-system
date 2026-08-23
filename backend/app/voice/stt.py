@@ -1,26 +1,24 @@
-"""Speech-to-text via OpenAI Whisper. Note: the original spec text says "OpenAI whisper
-model, which is text-to-speech" — that's incorrect, Whisper is speech-to-text. This module
-implements it correctly: candidate's spoken answer (audio) -> text. Text-to-speech (the
-interviewer's voice) is ElevenLabs, in tts.py.
+"""Speech-to-text via ElevenLabs Scribe. Note: the original spec text says "OpenAI
+whisper model, which is text-to-speech" — that's incorrect (Whisper is speech-to-text,
+and this project uses Claude, not OpenAI, for its LLM anyway). Claude has no
+speech-to-text capability, so voice transcription runs on ElevenLabs Scribe instead —
+text-to-speech (the interviewer's voice) is also ElevenLabs, in tts.py.
 """
 
-from app.llm import get_openai_client
+from app.config import get_settings
+from app.voice.client import get_elevenlabs_client
 
 
 def transcribe(file_path: str) -> dict:
     """Returns {"text": str, "duration_seconds": float, "word_count": int}."""
-    client = get_openai_client()
+    settings = get_settings()
     with open(file_path, "rb") as f:
-        result = client.audio.transcriptions.create(
-            model="whisper-1",
-            file=f,
-            response_format="verbose_json",
-            timestamp_granularities=["word"],
+        result = get_elevenlabs_client().speech_to_text.convert(
+            model_id=settings.elevenlabs_stt_model, file=f
         )
 
     text = result.text
-    duration = getattr(result, "duration", None) or 0.0
-    words = getattr(result, "words", None) or []
-    word_count = len(words) if words else len(text.split())
+    duration = result.audio_duration_secs or 0.0
+    word_count = sum(1 for w in result.words if w.type == "word")
 
     return {"text": text, "duration_seconds": float(duration), "word_count": word_count}

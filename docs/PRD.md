@@ -8,13 +8,13 @@ A full AI-powered mock interview agent that takes a candidate's resume PDF, runs
 - The interview creator/operator (running and reviewing sessions).
 
 ## Core Features (v1 only)
-1. Resume upload + parsing via OpenAI (no third-party PDF library) into structured sections and a field classification (NLP / CV / other).
+1. Resume upload + parsing via Claude (native document input, no third-party PDF library) into structured sections and a field classification (NLP / CV / other).
 2. Supabase project created and provisioned automatically (via the Management API), with persistence for candidates, sessions, messages, evaluations, and reports.
 3. All five interview phases over text chat: (1) background questions, (2) technical deep-dive on the primary project using a Russian-doll/Socratic drill-down, (3) same drill-down on a second project, (4) factual ML questions sourced from a retrieved question bank with a generated fallback, (5) behavioral questions.
 4. ML questions bank: the MLQuestions GitHub repo ingested into a local markdown store, embedded with a 384-dim sentence-transformer model, retrieved by similarity search against the candidate's field.
 5. Hints in phases 2/3 when the candidate is stuck, factored into evaluation.
 6. A fixed "tone of the interviewer" system prompt applied across all phases: professional, concise, no over-enthusiasm.
-7. Voice mode: browser mic capture → Whisper speech-to-text → orchestrator; orchestrator reply → ElevenLabs text-to-speech (voice ID `tAtHhBlA3E0eKZJKNSKE`) → playback.
+7. Voice mode: browser mic capture → ElevenLabs Scribe speech-to-text → orchestrator; orchestrator reply → ElevenLabs text-to-speech (voice ID `tAtHhBlA3E0eKZJKNSKE`) → playback.
 8. Empathy/anxiety detection: a speaking-rate and disfluency heuristic on the candidate's voice input that triggers a pause-and-reassure turn.
 9. Evaluation engine: per-phase scoring (phase 1 none; phases 2/3 a depth+hint-usage metric; phase 4 correctness count; phase 5 an LLM-judged visionary/grounded/team-player score with a penalty for asking no follow-up questions).
 10. Final report: aggregated per-phase scores + narrative summary, persisted and rendered in the UI.
@@ -27,9 +27,9 @@ A full AI-powered mock interview agent that takes a candidate's resume PDF, runs
 ## Tech Stack
 | Component | Technology |
 |---|---|
-| LLM | OpenAI, model configurable via `OPENAI_CHAT_MODEL` (default `gpt-5.4`, reasoning effort low) — flexible, may change |
-| Resume Parsing | OpenAI native file input (not pymupdf/pdfplumber) — flexible, may change |
-| Speech-to-Text | OpenAI Whisper |
+| LLM | Anthropic Claude, model configurable via `ANTHROPIC_MODEL` (default `claude-opus-5`, effort `high`) — flexible, may change |
+| Resume Parsing | Claude native document input (base64 PDF, not pymupdf/pdfplumber) — flexible, may change |
+| Speech-to-Text | ElevenLabs Scribe (`scribe_v2`) — Claude has no STT, so this replaced Whisper |
 | Text-to-Speech | ElevenLabs (voice ID `tAtHhBlA3E0eKZJKNSKE`) |
 | Database | Supabase (PostgreSQL), provisioned programmatically via the Management API |
 | Embedding Model | 384-dimensional model (`sentence-transformers/all-MiniLM-L6-v2`), run locally |
@@ -39,11 +39,11 @@ A full AI-powered mock interview agent that takes a candidate's resume PDF, runs
 | Secrets | `.env` (git-ignored), sourced from `secrets.md` (also git-ignored) |
 
 ## Architecture
-Browser (React) talks to the FastAPI backend over REST: resume upload, chat turns, and voice turns. The backend calls out to OpenAI (parsing, chat, Whisper STT) and ElevenLabs (TTS), and reads/writes session and evaluation state in Supabase. The ML question retriever runs in-process in the backend against a locally embedded copy of the MLQuestions repo — no external vector DB needed at this scale.
+Browser (React) talks to the FastAPI backend over REST: resume upload, chat turns, and voice turns. The backend calls out to Claude (parsing, chat) and ElevenLabs (STT + TTS), and reads/writes session and evaluation state in Supabase. The ML question retriever runs in-process in the backend against a locally embedded copy of the MLQuestions repo — no external vector DB needed at this scale.
 
 ```
-Browser (React) --REST--> FastAPI backend --> OpenAI (parse/chat/Whisper)
-                                           --> ElevenLabs (TTS)
+Browser (React) --REST--> FastAPI backend --> Claude (parse/chat)
+                                           --> ElevenLabs (Scribe STT + TTS)
                                            --> Supabase (Postgres persistence)
                                            --> local MiniLM embeddings (ML question retrieval)
 ```
