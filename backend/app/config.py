@@ -14,7 +14,10 @@ class Settings(BaseSettings):
     anthropic_effort: str = "medium"
 
     elevenlabs_api_key: str = ""
-    elevenlabs_voice_id: str = "tAtHhBlA3E0eKZJKNSKE"
+    # "Daniel" — premade voice, works on the free tier. The spec's original voice
+    # (tAtHhBlA3E0eKZJKNSKE, "Margot") is a Professional Voice Clone, which free
+    # tier can't use via the API at all (HTTP 402), regardless of "My Voices" slots.
+    elevenlabs_voice_id: str = "onwK4e9ZLuTAKqWW03F9"
     elevenlabs_stt_model: str = "scribe_v2"
 
     supabase_url: str = ""

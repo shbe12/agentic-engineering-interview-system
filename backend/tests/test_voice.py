@@ -61,5 +61,5 @@ def test_synthesize_calls_elevenlabs_with_configured_voice():
 
     assert audio == b"chunk1chunk2"
     _, kwargs = fake_client.text_to_speech.convert.call_args
-    assert kwargs["voice_id"] == "tAtHhBlA3E0eKZJKNSKE"
+    assert kwargs["voice_id"] == "onwK4e9ZLuTAKqWW03F9"
     assert kwargs["text"] == "Hello, candidate."
