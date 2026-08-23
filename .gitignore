@@ -1,0 +1,27 @@
+# secrets — never commit
+secrets.md
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# node
+node_modules/
+dist/
+build/
+.vite/
+
+# data (generated, can be large)
+data/ml_questions.md
+*.faiss
+*.index
+
+# os / editor
+.DS_Store
+*.log
