@@ -15,7 +15,9 @@ from app.llm import chat_json
 
 DATA_PATH = Path(__file__).resolve().parents[3] / "data" / "ml_questions.md"
 
-_QUESTION_RE = re.compile(r"^#### \d+\)\s*(.+?)\s*(?:\[\[.*?\]\].*)?$")
+
+# Root README uses "#### N) Question [[src]]"; the NLP README uses "### N. Question [[src]]".
+_QUESTION_RE = re.compile(r"^#{3,4}\s*\d+[.)]\s*(.+?)\s*(?:\[\[.*?\]\].*)?$")
 _FIELD_MARKER_RE = re.compile(r"<!--\s*field:\s*(\w+)\s*-->")
 
 
