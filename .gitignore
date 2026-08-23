@@ -25,3 +25,4 @@ data/ml_questions.md
 # os / editor
 .DS_Store
 *.log
+e2e/screenshots/
