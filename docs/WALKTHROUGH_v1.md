@@ -90,8 +90,17 @@ Out of scope for v1 (per `docs/PRD.md`):
 Discovered during `/dev` that's worth knowing about, not blocking:
 - The interviewer's TTS voice ("Daniel") is a premade ElevenLabs voice, not a personal clone — the free ElevenLabs tier can't use Professional Voice Clones via the API at all. Upgrading the ElevenLabs plan would unlock a cloned voice if wanted.
 - ElevenLabs free tier caps at 10,000 TTS characters/month — worth watching if running several full interviews with voice replies enabled.
-- STT (Scribe) is unit-verified against the real SDK's response shape but hasn't been exercised with a real recorded voice answer yet — worth trying in-browser as part of your own first run.
 - There's minor redundant phrasing when a phase transitions (the closing line of one phase and the opening line of the next can both say something like "let's move into the technical portion") — cosmetic, not incorrect.
+
+## Automated end-to-end suite
+
+`e2e/e2e_test.py` (Playwright, driven against real Claude/Supabase/ElevenLabs — not mocked) now passes 10/10, including the browser → real audio fixture → `/interview/voice` → ElevenLabs Scribe STT path that was previously only unit-verified. Run it yourself with both servers up:
+
+```bash
+backend/.venv/bin/python e2e/e2e_test.py
+```
+
+Screenshots land in `e2e/screenshots/` (gitignored — regenerate by re-running). See `docs/TASKS.md` task 9 for what's covered and a selector bug that was found and fixed in the test script itself.
 
 ## Next version
 

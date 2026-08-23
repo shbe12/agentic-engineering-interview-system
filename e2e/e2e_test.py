@@ -30,6 +30,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
 import requests
 from playwright.sync_api import sync_playwright
@@ -131,6 +132,42 @@ def run() -> bool:
 
         page.on("response", capture_start_response)
 
+        # Per-turn / per-phase-transition screenshot trail, in addition to the
+        # named milestone screenshots below. "phase_N_start.png" is written
+        # the first time phase N is observed; "turn_NN_phase_N.png" is
+        # written after every turn (candidate message + interviewer reply).
+        # This test still fast-forwards phase 1 -> 5 via direct DB write (see
+        # below) rather than burning real LLM calls on phases 2-4, so only
+        # phase_1_start.png and phase_5_start.png will ever be produced —
+        # phases 2-4 are covered by the live manual testing in TASKS.md task 5,
+        # not by this automated trail.
+        turn_state: dict = {"count": 0, "last_phase": None}
+        phase_holder: dict = {"phase": None}
+
+        def capture_phase_response(response):
+            if response.request.method != "POST":
+                return
+            path = urlparse(response.url).path
+            if path.endswith(("/interview/start", "/interview/message", "/interview/voice")):
+                try:
+                    phase_holder["phase"] = response.json()["phase"]
+                except Exception:
+                    pass
+
+        page.on("response", capture_phase_response)
+
+        def snap_turn(page):
+            phase = phase_holder["phase"]
+            if phase is None:
+                return
+            turn_state["count"] += 1
+            page.screenshot(
+                path=str(SCREENSHOT_DIR / f"turn_{turn_state['count']:02d}_phase_{phase}.png")
+            )
+            if phase != turn_state["last_phase"]:
+                page.screenshot(path=str(SCREENSHOT_DIR / f"phase_{phase}_start.png"))
+                turn_state["last_phase"] = phase
+
         try:
             # 1. Load
             page.goto(FRONTEND_URL, wait_until="networkidle")
@@ -151,6 +188,7 @@ def run() -> bool:
             opening = page.locator("p.whitespace-pre-wrap").first.inner_text()
             check.that("interviewer opens with a real question", len(opening) > 10)
             page.screenshot(path=str(SCREENSHOT_DIR / "3-chat-start.png"))
+            snap_turn(page)
 
             # 4. Text answer
             page.fill(
@@ -161,6 +199,7 @@ def run() -> bool:
             page.click('button:has-text("Send")')
             page.wait_for_function("document.querySelectorAll('p.whitespace-pre-wrap').length >= 3", timeout=150000)
             check.that("text answer produced a follow-up reply", True)
+            snap_turn(page)
 
             # 5. Voice answer — real MediaRecorder -> blob -> /interview/voice ->
             # ElevenLabs Scribe STT, using a synthesized WAV as the fake mic input.
@@ -174,6 +213,7 @@ def run() -> bool:
             )
             check.that("voice answer transcribed and produced a reply", True)
             page.screenshot(path=str(SCREENSHOT_DIR / "4-after-voice.png"))
+            snap_turn(page)
 
             # 6. Fast-forward to phase 5 via the DB — same mechanism used during
             # manual verification, so we don't re-burn many real LLM turns on
@@ -206,10 +246,10 @@ def run() -> bool:
                     page.fill('input[placeholder="Type your answer…"]', answer)
                     page.click('button:has-text("Send")')
                     page.wait_for_timeout(500)
-                    page.wait_for_selector(
-                        'input[placeholder="Type your answer…"]:not([disabled]), text=Final report',
-                        timeout=150000,
-                    )
+                    input_ready = page.locator('input[placeholder="Type your answer…"]:not([disabled])')
+                    report_heading = page.get_by_text("Final report")
+                    input_ready.or_(report_heading).first.wait_for(timeout=150000)
+                    snap_turn(page)
                     if _session_status(session_id) == "completed":
                         completed = True
                         break
