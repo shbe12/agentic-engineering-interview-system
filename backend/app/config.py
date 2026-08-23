@@ -8,7 +8,10 @@ class Settings(BaseSettings):
 
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-opus-5"
-    anthropic_effort: str = "high"
+    # "high" burns most of the token budget on thinking for a simple conversational
+    # turn, truncating the actual JSON reply before it finishes. "medium" leaves
+    # enough headroom while still giving the model room to reason about follow-ups.
+    anthropic_effort: str = "medium"
 
     elevenlabs_api_key: str = ""
     elevenlabs_voice_id: str = "tAtHhBlA3E0eKZJKNSKE"

@@ -3,6 +3,7 @@ import tempfile
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import StreamingResponse
 
 from app.evaluation.report import get_report
@@ -22,15 +23,23 @@ from app.voice.tts import synthesize
 
 router = APIRouter(prefix="/interview", tags=["interview"])
 
+# Route handlers below are plain `def` (not `async def`) wherever the body has no
+# `await` — FastAPI runs those in a worker thread pool automatically. Every LLM/
+# Supabase/ElevenLabs call in this app is a blocking SDK call; declaring the route
+# `async def` while calling them directly would block the whole event loop (found
+# live: /health went unresponsive for the duration of a single /interview/message
+# call). Handlers that DO need `await` (file reads) explicitly run their blocking
+# work via `run_in_threadpool` instead.
+
 
 @router.post("/start", response_model=StartInterviewResponse)
-async def start(req: StartInterviewRequest) -> StartInterviewResponse:
+def start(req: StartInterviewRequest) -> StartInterviewResponse:
     result = start_session(req.candidate_id)
     return StartInterviewResponse(**result)
 
 
 @router.post("/message", response_model=MessageResponse)
-async def message(req: MessageRequest) -> MessageResponse:
+def message(req: MessageRequest) -> MessageResponse:
     result = handle_message(req.session_id, req.content)
     return MessageResponse(**result)
 
@@ -42,7 +51,7 @@ async def voice_message(session_id: str, file: UploadFile) -> VoiceMessageRespon
         tmp_path = Path(tmp.name)
 
     try:
-        transcript = transcribe(str(tmp_path))
+        transcript = await run_in_threadpool(transcribe, str(tmp_path))
     finally:
         tmp_path.unlink(missing_ok=True)
 
@@ -56,7 +65,7 @@ async def voice_message(session_id: str, file: UploadFile) -> VoiceMessageRespon
         content = f"[VOICE: candidate sounds anxious — {anxiety['reason']}] {content}"
         reassurance_note = f"Anxiety heuristic triggered: {anxiety['reason']}"
 
-    result = handle_message(session_id, content)
+    result = await run_in_threadpool(handle_message, session_id, content)
 
     return VoiceMessageResponse(
         **result,
@@ -66,7 +75,7 @@ async def voice_message(session_id: str, file: UploadFile) -> VoiceMessageRespon
 
 
 @router.post("/speak")
-async def speak(req: SpeakRequest) -> StreamingResponse:
+def speak(req: SpeakRequest) -> StreamingResponse:
     if not req.text.strip():
         raise HTTPException(status_code=400, detail="text must not be empty")
     audio_bytes = synthesize(req.text)
@@ -74,7 +83,7 @@ async def speak(req: SpeakRequest) -> StreamingResponse:
 
 
 @router.get("/{session_id}/report", response_model=ReportResponse)
-async def report(session_id: str) -> ReportResponse:
+def report(session_id: str) -> ReportResponse:
     data = get_report(session_id)
     if not data:
         raise HTTPException(status_code=404, detail="Report not available yet — interview not completed.")

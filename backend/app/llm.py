@@ -5,7 +5,7 @@ import anthropic
 
 from app.config import get_settings
 
-MAX_TOKENS = 4096
+MAX_TOKENS = 16000  # non-streaming default per Claude API guidance; avoids truncating structured JSON mid-string
 
 
 @lru_cache

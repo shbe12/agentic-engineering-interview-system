@@ -2,6 +2,7 @@ import tempfile
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 
 from app.db.client import get_supabase
 from app.models.schemas import ResumeUploadResponse
@@ -20,7 +21,9 @@ async def upload_resume(file: UploadFile) -> ResumeUploadResponse:
         tmp_path = Path(tmp.name)
 
     try:
-        parsed = parse_resume_pdf(str(tmp_path))
+        # parse_resume_pdf is a blocking SDK call; run off the event loop so other
+        # requests (including /health) aren't stalled for the duration of the call.
+        parsed = await run_in_threadpool(parse_resume_pdf, str(tmp_path))
     finally:
         tmp_path.unlink(missing_ok=True)
 
