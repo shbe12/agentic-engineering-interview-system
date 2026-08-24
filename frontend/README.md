@@ -1,16 +1,35 @@
-# React + Vite
+# AI Mock Interview Agent — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React (Vite) + Tailwind CSS frontend for the AI Mock Interview Agent. Handles resume upload, the five-phase interview chat (text + voice), and the final report view.
 
-Currently, two official plugins are available:
+## Setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+npm install
+```
 
-## React Compiler
+Requires Node 22+ (`nvm alias default 22`).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Configuration
 
-## Expanding the Oxlint configuration
+Copy `.env.example` to `.env` and point `VITE_API_BASE_URL` at the backend:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+```
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+In production this is set as a Vercel environment variable instead, pointing at the deployed backend's URL.
+
+## Running
+
+```bash
+npm run dev -- --port 5173
+```
+
+## Building
+
+```bash
+npm run build
+```
+
+See `docs/WALKTHROUGH_v1.md` in the repo root for the full golden-path walkthrough (resume → chat → voice → report) against a running backend.
