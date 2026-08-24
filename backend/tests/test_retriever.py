@@ -70,3 +70,25 @@ def test_retrieve_questions_falls_back_to_generated_when_pool_empty(monkeypatch)
     mock_llm.assert_called_once()
     assert len(results) == 1
     assert results[0].question == "What is bias-variance tradeoff?"
+
+
+def test_real_onnx_embedder_ranks_semantically_similar_questions_higher():
+    """Exercises the real ONNX-backed MiniLM embedder end-to-end (not the
+    FakeEmbedder the tests above use) to confirm actual semantic retrieval
+    quality survived the PyTorch -> ONNX Runtime switch (see _OnnxMiniLM),
+    not just the mocked plumbing. Downloads the quantized model + tokenizer
+    from HF Hub on first run (cached under /tmp/hf_cache after)."""
+    embedder = retriever._OnnxMiniLM()
+
+    query = "What is the difference between stemming and lemmatization?"
+    nlp_neighbor = "Explain how TF-IDF measures word importance."
+    unrelated = "How does image registration work in computer vision?"
+
+    vecs = embedder.encode([query, nlp_neighbor, unrelated], normalize_embeddings=True)
+    sim_related = float(vecs[0] @ vecs[1])
+    sim_unrelated = float(vecs[0] @ vecs[2])
+
+    assert sim_related > sim_unrelated, (
+        f"expected the semantically related NLP question ({sim_related:.4f}) to score "
+        f"higher than the unrelated CV question ({sim_unrelated:.4f})"
+    )

@@ -4,6 +4,7 @@ relevant is found — per spec: "If you can't find questions in this document, c
 these questions yourself. And the question should have a factually correct answer."
 """
 
+import os
 import re
 from dataclasses import dataclass
 from functools import lru_cache
@@ -69,11 +70,56 @@ def _load_entries() -> list[QAEntry]:
     return _parse_markdown(DATA_PATH.read_text(encoding="utf-8"))
 
 
+class _OnnxMiniLM:
+    """Runs sentence-transformers/all-MiniLM-L6-v2 via ONNX Runtime (quantized
+    weights), reproducing SentenceTransformer's mean-pooling + L2-normalization
+    recipe, without a PyTorch dependency. PyTorch alone is ~750MB even in its
+    CPU-only build — over Vercel's 500MB function size limit by itself. The
+    quantized ONNX weights (~23MB) plus onnxruntime + transformers'
+    tokenizer-only base (no torch extra) fit comfortably. Exposes the same
+    `.encode(inputs, normalize_embeddings=True)` interface SentenceTransformer
+    did, so callers below are unchanged.
+    """
+
+    MODEL_ID = "sentence-transformers/all-MiniLM-L6-v2"
+    ONNX_FILE = "onnx/model_quint8_avx2.onnx"
+
+    def __init__(self):
+        from huggingface_hub import hf_hub_download
+        from transformers import AutoTokenizer
+        import onnxruntime as ort
+
+        # /tmp is the one writable path on Vercel's serverless filesystem;
+        # explicit rather than relying on HF's default (~/.cache), which may
+        # not be writable there.
+        cache_dir = os.environ.get("HF_HOME", "/tmp/hf_cache")
+        self._tokenizer = AutoTokenizer.from_pretrained(self.MODEL_ID, cache_dir=cache_dir)
+        onnx_path = hf_hub_download(repo_id=self.MODEL_ID, filename=self.ONNX_FILE, cache_dir=cache_dir)
+        self._session = ort.InferenceSession(onnx_path, providers=["CPUExecutionProvider"])
+        self._input_names = {i.name for i in self._session.get_inputs()}
+
+    def encode(self, inputs, normalize_embeddings: bool = True) -> np.ndarray:
+        single = isinstance(inputs, str)
+        texts = [inputs] if single else list(inputs)
+        encoded = self._tokenizer(texts, padding=True, truncation=True, return_tensors="np")
+        onnx_inputs = {k: v for k, v in encoded.items() if k in self._input_names}
+        token_embeddings = self._session.run(None, onnx_inputs)[0]
+
+        attention_mask = np.expand_dims(encoded["attention_mask"], -1).astype(np.float32)
+        summed = (token_embeddings * attention_mask).sum(axis=1)
+        counts = np.clip(attention_mask.sum(axis=1), a_min=1e-9, a_max=None)
+        pooled = summed / counts
+
+        if normalize_embeddings:
+            norms = np.linalg.norm(pooled, axis=1, keepdims=True)
+            pooled = pooled / norms
+
+        return pooled[0] if single else pooled
+
+
 @lru_cache
 def _embedder():
-    from sentence_transformers import SentenceTransformer
-
-    return SentenceTransformer("all-MiniLM-L6-v2")  # 384-dim
+    return _OnnxMiniLM()  # 384-dim
 
 
 @lru_cache

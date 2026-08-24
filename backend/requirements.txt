@@ -1,23 +1,20 @@
-# CPU-only torch build for Vercel's Python 3.12 builder, pinned by exact
-# wheel URL — bypasses index resolution entirely for this package (no GPU on
-# serverless; the default PyPI wheel bundles ~2.7GB of unused CUDA/cuDNN
-# libraries). Deliberately NOT using --extra-index-url anywhere in this file:
-# uv (which Vercel's builder uses, not pip) applies its strict per-index
-# "first match wins" resolution to every package in the file the moment that
-# flag is present, not just torch — it broke requests==2.32.3 the same way
-# even after torch itself was pinned directly. Non-3.12 environments (local
-# dev) fall back to whatever `sentence-transformers` pulls in transitively —
-# a larger, CUDA-inclusive build there is a disk-space inconvenience, not a
-# deployment blocker.
-torch @ https://download.pytorch.org/whl/cpu/torch-2.13.0%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl ; python_version == "3.12"
-
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 python-multipart==0.0.20
 pydantic-settings==2.7.1
 anthropic==1.0.0
 supabase==2.11.0
-sentence-transformers==3.3.1
+# ML question retriever runs sentence-transformers/all-MiniLM-L6-v2 via ONNX
+# Runtime (quantized weights, downloaded from HF Hub at runtime — see
+# app/questions/retriever.py), not sentence-transformers/PyTorch. PyTorch
+# alone is ~750MB even CPU-only — over Vercel's 500MB function size limit by
+# itself, and both `sentence-transformers` and `optimum` list it as a hard
+# dependency regardless of backend choice, so the only way to actually drop
+# it is to bypass those libraries and call onnxruntime + a tokenizer
+# directly. `transformers` here is for tokenization only (no torch extra).
+onnxruntime==1.29.0
+transformers==5.15.1
+huggingface_hub==1.28.0
 numpy==2.2.1
 requests==2.32.3
 python-dotenv==1.0.1
