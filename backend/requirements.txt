@@ -1,14 +1,15 @@
-# CPU-only torch build — the default PyPI wheel bundles ~2.7GB of unused
-# CUDA/cuDNN libraries (no GPU on serverless). Vercel's Python builder runs
-# CPython 3.12 and resolves deps with uv, whose stricter index-strategy
-# conflicts with Vercel's own build-time pyproject.toml when an
-# --extra-index-url is involved — so on 3.12 we pin the exact wheel URL
-# directly, bypassing index resolution for this package entirely. Everywhere
-# else (local dev, other Python versions) falls back to plain index-based
-# resolution via --extra-index-url, which pip handles fine.
---extra-index-url https://download.pytorch.org/whl/cpu
+# CPU-only torch build for Vercel's Python 3.12 builder, pinned by exact
+# wheel URL — bypasses index resolution entirely for this package (no GPU on
+# serverless; the default PyPI wheel bundles ~2.7GB of unused CUDA/cuDNN
+# libraries). Deliberately NOT using --extra-index-url anywhere in this file:
+# uv (which Vercel's builder uses, not pip) applies its strict per-index
+# "first match wins" resolution to every package in the file the moment that
+# flag is present, not just torch — it broke requests==2.32.3 the same way
+# even after torch itself was pinned directly. Non-3.12 environments (local
+# dev) fall back to whatever `sentence-transformers` pulls in transitively —
+# a larger, CUDA-inclusive build there is a disk-space inconvenience, not a
+# deployment blocker.
 torch @ https://download.pytorch.org/whl/cpu/torch-2.13.0%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl ; python_version == "3.12"
-torch==2.13.0+cpu ; python_version != "3.12"
 
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
