@@ -1,7 +1,14 @@
 # CPU-only torch build — the default PyPI wheel bundles ~2.7GB of unused
-# CUDA/cuDNN libraries (no GPU on serverless); this keeps the deploy small.
+# CUDA/cuDNN libraries (no GPU on serverless). Vercel's Python builder runs
+# CPython 3.12 and resolves deps with uv, whose stricter index-strategy
+# conflicts with Vercel's own build-time pyproject.toml when an
+# --extra-index-url is involved — so on 3.12 we pin the exact wheel URL
+# directly, bypassing index resolution for this package entirely. Everywhere
+# else (local dev, other Python versions) falls back to plain index-based
+# resolution via --extra-index-url, which pip handles fine.
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.13.0+cpu
+torch @ https://download.pytorch.org/whl/cpu/torch-2.13.0%2Bcpu-cp312-cp312-manylinux_2_28_x86_64.whl ; python_version == "3.12"
+torch==2.13.0+cpu ; python_version != "3.12"
 
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
