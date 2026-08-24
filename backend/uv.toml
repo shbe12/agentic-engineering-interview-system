@@ -1,0 +1,7 @@
+# Vercel's Python builder uses uv, whose default index-strategy ("first index
+# that has the package wins") breaks once requirements.txt adds
+# --extra-index-url for the CPU-only torch build: uv finds `requests` on
+# download.pytorch.org (at a different version) and refuses to fall back to
+# PyPI for the pinned version, even though pip handles this fine. This matches
+# uv's own suggested fix for exactly this situation.
+index-strategy = "unsafe-best-match"
