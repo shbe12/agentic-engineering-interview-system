@@ -1,6 +1,6 @@
 """Fetches the MLQuestions GitHub repo (https://github.com/andrewekhalel/MLQuestions)
-and writes it to data/ml_questions.md, tagging each question with a field so the
-retriever can filter by the candidate's classified field (nlp / cv / other).
+and writes it to backend/data/ml_questions.md, tagging each question with a field so
+the retriever can filter by the candidate's classified field (nlp / cv / other).
 
 Run directly: `python -m app.questions.fetch_ml_questions`
 """
@@ -12,7 +12,7 @@ import requests
 ROOT_README = "https://raw.githubusercontent.com/andrewekhalel/MLQuestions/master/README.md"
 NLP_README = "https://raw.githubusercontent.com/andrewekhalel/MLQuestions/master/NLP/README.md"
 
-DATA_DIR = Path(__file__).resolve().parents[3] / "data"
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 OUTPUT_PATH = DATA_DIR / "ml_questions.md"
 
 

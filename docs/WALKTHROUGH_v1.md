@@ -43,7 +43,7 @@ npm install
 # requires Node 22+ — this repo pins `nvm alias default 22`
 ```
 
-If `data/ml_questions.md` is ever missing, regenerate it with:
+If `backend/data/ml_questions.md` is ever missing, regenerate it with:
 ```bash
 cd backend && .venv/bin/python -m app.questions.fetch_ml_questions
 ```
