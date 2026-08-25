@@ -38,3 +38,15 @@ App at http://localhost:5173.
 cd backend
 .venv/bin/pytest
 ```
+
+## Planned: bring your own API key
+
+Right now every call to Claude runs off one server-side key (`ANTHROPIC_API_KEY` in `backend/.env`), shared by all users via a cached singleton client (`get_anthropic_client()` in `backend/app/llm.py`). The plan is to let a user supply their own Anthropic key instead, so their usage bills to their own account rather than the host's.
+
+1. **Transport** — accept the key as an `X-Anthropic-Api-Key` request header on the interview endpoints (`backend/app/routes/interview.py`: `/start`, `/message`, `/voice`) and resume upload (`backend/app/routes/resume.py`: `/upload`). Never accept it as a query param or persist it in Supabase.
+2. **Backend plumbing** — thread the per-request key from the route handler down through `app/interview/orchestrator.py`, `app/evaluation/evaluator.py`, `app/evaluation/report.py`, `app/questions/retriever.py`, and `app/resume/parser.py` into `app/llm.py`. `chat_text`/`chat_json`/`get_anthropic_client` need an optional `api_key` param — `lru_cache` on `get_anthropic_client` has to go (or be keyed by the caller's key) since it currently assumes one global client. Fall back to `settings.anthropic_api_key` when no per-request key is present, so the app still works out of the box.
+3. **Validation** — on first use of a user-supplied key, make a cheap Anthropic call (or catch the 401) and surface a clear error back through the API rather than a raw exception.
+4. **Frontend** — add a settings entry (e.g. a small "Use your own API key" panel) that stores the key in `localStorage` only, never sends it anywhere but this backend, and attaches it as a header from `frontend/src/api/client.js` on every request when present.
+5. **Cost/rate-limit isolation** — once BYOK exists, usage on a user-supplied key no longer needs to count against the host's rate limits or budget alerts, if any exist.
+
+Not started — no code changes yet, this is a planning note for the next sprint.
